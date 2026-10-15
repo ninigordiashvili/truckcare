@@ -1,0 +1,14 @@
+name: ვერსიის გამოქვეყნება
+
+# main-ზე push-ის შემდეგ Expo თვითონ აქვეყნებს ახალ ვერსიას preview არხზე.
+# ვისაც ბმული აქვს, Expo Go-ს გადატვირთვისას უკვე ახალს ნახავს.
+on:
+  push:
+    branches: ['main']
+
+jobs:
+  publish_update:
+    name: preview არხზე გამოქვეყნება
+    type: update
+    params:
+      channel: preview
