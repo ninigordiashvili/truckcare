@@ -1,0 +1,210 @@
+// Truck Care — მონაცემთა სქემა.
+// დეველოპმენტში SQLite. Postgres-ზე გადასვლა = provider-ის შეცვლა + migrate.
+// enum-ები შეგნებულად String-ია, რომ SQLite-იც და Postgres-იც ერთნაირად მუშაობდეს.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// კომპანია, რომელსაც სატვირთოები ჰყავს და ინვოისი მიდის
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  taxId     String?
+  phone     String?
+  createdAt DateTime @default(now())
+
+  users   User[]
+  trucks  Truck[]
+  tickets Ticket[]
+}
+
+/// მომხმარებელი. role: driver | tech | operator | admin
+model User {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  name      String
+  role      String   @default("driver")
+  clientId  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  client        Client?  @relation(fields: [clientId], references: [id])
+  assignedJobs  Ticket[] @relation("TicketTech")
+  createdTicket Ticket[] @relation("TicketCreator")
+  events        TicketEvent[]
+}
+
+model Truck {
+  id       String  @id @default(cuid())
+  plate    String  @unique
+  vin      String?
+  make     String?
+  model    String?
+  year     Int?
+  clientId String?
+
+  client  Client?  @relation(fields: [clientId], references: [id])
+  tickets Ticket[]
+
+  @@index([vin])
+}
+
+model Supplier {
+  id       String  @id @default(cuid())
+  name     String  @unique
+  city     String?
+  country  String  @default("GE")
+  phone    String?
+  isActive Boolean @default(true)
+
+  offers Offer[]
+  orders PartOrder[]
+}
+
+/// ნაწილი. jargon — ჟარგონული სახელები, მძიმით გამოყოფილი.
+model Part {
+  id        String   @id @default(cuid())
+  name      String
+  oem       String?
+  category  String?
+  jargon    String   @default("")
+  fits      String   @default("")
+  createdAt DateTime @default(now())
+
+  offers Offer[]
+  orders PartOrder[]
+
+  @@index([oem])
+}
+
+/// მომწოდებლის შეთავაზება. verifiedAt = null → ფასი დღეს არ გადამოწმებულა.
+model Offer {
+  id         String    @id @default(cuid())
+  partId     String
+  supplierId String
+  kind       String    @default("ანალოგი")
+  price      Float
+  currency   String    @default("GEL")
+  stock      String    @default("შეკვეთით")
+  lead       String?
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  part     Part     @relation(fields: [partId], references: [id], onDelete: Cascade)
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+
+  @@index([partId])
+}
+
+/// სიმპტომი — AI-ის ბაზა. answers JSON-ტექსტად (SQLite-ში Json ტიპი არ არის).
+model Symptom {
+  id        String   @id @default(cuid())
+  keywords  String
+  question  String
+  answers   String
+  source    String?
+  confirmed Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+/// თიქეთი — გამოძახება ან ნაწილის შეკვეთა.
+/// stage: new | assigned | enroute | onsite | waiting_part | done | invoiced
+model Ticket {
+  id        String   @id @default(cuid())
+  number    Int      @unique
+  clientId  String
+  truckId   String
+  createdById String?
+  techId    String?
+  issue     String
+  place     String?
+  lat       Float?
+  lng       Float?
+  stage     String   @default("new")
+  note      String?
+  hours     Float    @default(0)
+  calloutFee Float   @default(0)
+  createdAt DateTime @default(now())
+  closedAt  DateTime?
+
+  client    Client  @relation(fields: [clientId], references: [id])
+  truck     Truck   @relation(fields: [truckId], references: [id])
+  tech      User?   @relation("TicketTech", fields: [techId], references: [id])
+  createdBy User?   @relation("TicketCreator", fields: [createdById], references: [id])
+
+  events  TicketEvent[]
+  orders  PartOrder[]
+  invoice Invoice?
+
+  @@index([stage])
+  @@index([techId])
+}
+
+model TicketEvent {
+  id        String   @id @default(cuid())
+  ticketId  String
+  userId    String?
+  kind      String   @default("note")
+  text      String
+  createdAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id])
+
+  @@index([ticketId])
+}
+
+/// ნაწილის შეკვეთა თიქეთზე. delivery: pickup | courier
+model PartOrder {
+  id          String   @id @default(cuid())
+  ticketId    String
+  partId      String?
+  supplierId  String?
+  nameSnapshot String
+  oemSnapshot String?
+  qty         Int      @default(1)
+  unitPrice   Float
+  delivery    String   @default("pickup")
+  deliveryFee Float    @default(0)
+  status      String   @default("შეკვეთილია")
+  createdAt   DateTime @default(now())
+
+  ticket   Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  part     Part?     @relation(fields: [partId], references: [id])
+  supplier Supplier? @relation(fields: [supplierId], references: [id])
+
+  @@index([ticketId])
+}
+
+model Invoice {
+  id        String   @id @default(cuid())
+  number    String   @unique
+  ticketId  String   @unique
+  clientId  String
+  net       Float
+  vat       Float
+  gross     Float
+  sentAt    DateTime?
+  createdAt DateTime @default(now())
+
+  ticket Ticket        @relation(fields: [ticketId], references: [id])
+  lines  InvoiceLine[]
+}
+
+model InvoiceLine {
+  id        String  @id @default(cuid())
+  invoiceId String
+  title     String
+  detail    String?
+  qty       Float   @default(1)
+  unitPrice Float
+  sum       Float
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}

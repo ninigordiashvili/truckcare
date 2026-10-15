@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "truck-care",
+    "name": "Truck Care",
     "slug": "truck-care",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -19,6 +19,19 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "primaryColor": "#111111",
+    "extra": {
+      "eas": {
+        "projectId": "7de77afe-5630-4f9f-a764-8b1ac4a6730c"
+      }
+    },
+    "owner": "ninigordiashvili",
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/7de77afe-5630-4f9f-a764-8b1ac4a6730c"
     }
   }
 }

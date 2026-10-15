@@ -1,0 +1,44 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "სერვერი (API :4000)",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": { "cwd": "${workspaceFolder}/server" },
+      "isBackground": true,
+      "presentation": { "group": "live", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "აპი (Expo + iOS)",
+      "type": "shell",
+      "command": "npx expo start --ios",
+      "options": { "cwd": "${workspaceFolder}" },
+      "isBackground": true,
+      "presentation": { "group": "live", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "ყველაფერი ლაივზე",
+      "dependsOn": ["სერვერი (API :4000)", "აპი (Expo + iOS)"],
+      "dependsOrder": "parallel",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "ბაზის შევსება თავიდან",
+      "type": "shell",
+      "command": "npm run db:seed",
+      "options": { "cwd": "${workspaceFolder}/server" },
+      "problemMatcher": []
+    },
+    {
+      "label": "სრული ციკლის ტესტი",
+      "type": "shell",
+      "command": "npm run smoke",
+      "options": { "cwd": "${workspaceFolder}/server" },
+      "problemMatcher": []
+    }
+  ]
+}
