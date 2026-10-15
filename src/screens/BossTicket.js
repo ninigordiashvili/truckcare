@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, Alert } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Screen, Card, Chip, Row, Btn, Dot, Note } from '../ui';
 import { C, F } from '../theme';
 import { useApp, STAGES } from '../store';
@@ -29,10 +29,7 @@ export default function BossTicket({ params }) {
             disabled={t.invoiceSent}
             title={t.invoiceSent ? 'ინვოისი გაგზავნილია' : 'გააგზავნე კომპანიაზე'}
             hint={t.invoiceSent ? null : `${sum.gross.toFixed(2)} ₾ · ${client.name}`}
-            onPress={() => {
-              app.sendInvoice(t.id);
-              Alert.alert('გაიგზავნა', `ინვოისი გაეგზავნა: ${client.name}`);
-            }}
+            onPress={() => app.sendInvoice(t.id)}
           />
         ) : null
       }
